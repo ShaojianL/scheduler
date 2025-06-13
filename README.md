@@ -13,6 +13,13 @@ pnpm dev
 # or
 bun dev
 ```
+## Buttons by Shadcn ui
+```
+npx shadcn@latest add badge calendar card checkbox drawer dropdown-menu input popover progress select switch table tooltip
+```
+## User Authentication by Auth.js or Clerk
+
+
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
