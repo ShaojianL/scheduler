@@ -2,7 +2,11 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 ## Getting Started
 
-First, run the development server:
+First setup the environment
+```bash
+npm install
+```
+if you in the `scheduler` folder, npm install will look for the `package.json` and installs the necessary packages, then, run the development server:
 
 ```bash
 npm run dev
