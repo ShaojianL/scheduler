@@ -10,12 +10,12 @@ export default function Hero() {
           <br />
           <span className="text-blue-600 dark:text-blue-400">Scheduling</span>
           <br />
-          for Clinics
+          for housekeeping services
         </h1>
 
         {/* Subtitle */}
         <p className="text-xl text-gray-600 dark:text-gray-300 mb-12 max-w-2xl mx-auto leading-relaxed">
-          After login, there will be two sides, one is the administrator, the other is the patient. The administrator can manage the patient, and the patient can view their appointment information.
+          In progress...
         </p>
 
         {/* CTA Button */}

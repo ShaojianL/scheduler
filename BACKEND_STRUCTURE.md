@@ -1,8 +1,8 @@
-This manual explains the relationship between `lib/db.js` and the API routes like `app/api/staff/route.js`. This is a crucial architectural concept.
+This manual explains the relationship between `lib/db.js` and the API routes like `app/api/cleaners/route.js`. This is a crucial architectural concept.
 
 ## **Current Relationship (What We Have Now):**
 
-### **`app/api/staff/route.js` (API Layer)**
+### **`app/api/cleaners/route.js` (API Layer)**
 - **Purpose**: HTTP endpoint that handles web requests
 - **What it does**: 
   - Receives HTTP requests (GET, POST, etc.)
@@ -29,12 +29,12 @@ HTTP Request → API Route → Database Service → Database
 
 ### **Example Flow:**
 
-1. **Frontend** makes request: `GET /api/staff?dept_id=1`
-2. **`staff/route.js`** receives the request
-3. **`staff/route.js`** calls `healthcareDB.getStaff({ dept_id: 1 })`
+1. **Frontend** makes request: `GET /api/cleaners?property_type=condo`
+2. **`cleaners/route.js`** receives the request
+3. **`cleaners/route.js`** calls `cleaningServicesDB.getCleaners({ property_type: 'condo' })`
 4. **`db.js`** executes database query
-5. **`db.js`** returns data to `staff/route.js`
-6. **`staff/route.js`** sends JSON response to frontend
+5. **`db.js`** returns data to `cleaners/route.js`
+6. **`cleaners/route.js`** sends JSON response to frontend
 
 ## **Current Problem:**
 
@@ -44,15 +44,15 @@ Right now, both files have **TODO comments** because they're not connected. The 
 
 ### **1. Connect the Layers**
 
-In `app/api/staff/route.js`, we should replace:
+In `app/api/cleaners/route.js`, we should replace:
 ```javascript
 // Current (hardcoded)
-const staff = [
-  { staff_id: 1, name: 'Dr. Sarah Johnson', ... }
+const cleaners = [
+  { cleaner_id: 1, name: 'Maria Garcia', ... }
 ];
 
 // Should be (connected to database)
-const staff = await healthcareDB.getStaff({ dept_id: parseInt(deptId) });
+const cleaners = await cleaningServicesDB.getCleaners({ property_type: propertyType });
 ```
 
 ### **2. Implement Database Methods**
@@ -60,19 +60,35 @@ const staff = await healthcareDB.getStaff({ dept_id: parseInt(deptId) });
 In `lib/db.js`, we should replace:
 ```javascript
 // Current (placeholder)
-async getStaff(filters = {}) {
+async getCleaners(filters = {}) {
   // TODO: Implement actual database query
   return [];
 }
 
 // Should be (actual Prisma queries)
-async getStaff(filters = {}) {
-  return await prisma.staff.findMany({
+async getCleaners(filters = {}) {
+  return await prisma.cleaner.findMany({
     where: filters,
-    include: { department: true }
+    include: { specialties: true }
   });
 }
 ```
+
+## **New Domain Model (Airbnb Cleaning Services):**
+
+### **Core Entities:**
+- **Properties**: Airbnb properties that need cleaning
+- **Cleaners**: Cleaning staff with specialties and rates
+- **Clients**: Property owners who book cleaning services
+- **Service Types**: Different types of cleaning services (regular, deep, move-out, etc.)
+- **Bookings**: Scheduled cleaning appointments
+- **Time Slots**: Cleaner availability schedules
+
+### **Key Relationships:**
+- Properties belong to Clients
+- Bookings connect Clients, Cleaners, Properties, and Service Types
+- Cleaners have specialties and preferred property types
+- Service Types have different durations and pricing
 
 ## **Benefits of This Architecture:**
 
@@ -84,7 +100,7 @@ async getStaff(filters = {}) {
 
 ## **Next Steps:**
 
-1. **Set up Prisma** with your schema
+1. **Set up Prisma** with your schema for cleaning services
 2. **Implement the database methods** in `db.js`
 3. **Connect API routes** to use the database service
 4. **Remove hardcoded data** from API routes

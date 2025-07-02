@@ -1,56 +1,70 @@
 import { NextResponse } from 'next/server';
+import { cleaningServicesDB } from '@/lib/db';
 
 // GET /api/time-slots - Get time slots with filters
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
-    const staffId = searchParams.get('staff_id');
+    const cleanerId = searchParams.get('cleaner_id');
     const day = searchParams.get('day');
 
     // TODO: Replace with actual database query
     const timeSlots = [
       {
         slot_id: 1,
-        staff_id: 1,
+        cleaner_id: 1,
         day: 'Mon',
-        start_time: '09:00:00',
-        end_time: '17:00:00'
+        start_time: '08:00:00',
+        end_time: '18:00:00',
+        max_bookings_per_day: 4
       },
       {
         slot_id: 2,
-        staff_id: 1,
+        cleaner_id: 1,
         day: 'Tue',
-        start_time: '09:00:00',
-        end_time: '17:00:00'
+        start_time: '08:00:00',
+        end_time: '18:00:00',
+        max_bookings_per_day: 4
       },
       {
         slot_id: 3,
-        staff_id: 1,
+        cleaner_id: 1,
         day: 'Wed',
-        start_time: '09:00:00',
-        end_time: '17:00:00'
+        start_time: '08:00:00',
+        end_time: '18:00:00',
+        max_bookings_per_day: 4
       },
       {
         slot_id: 4,
-        staff_id: 2,
+        cleaner_id: 2,
         day: 'Mon',
-        start_time: '10:00:00',
-        end_time: '18:00:00'
+        start_time: '09:00:00',
+        end_time: '17:00:00',
+        max_bookings_per_day: 3
       },
       {
         slot_id: 5,
-        staff_id: 2,
+        cleaner_id: 2,
         day: 'Tue',
+        start_time: '09:00:00',
+        end_time: '17:00:00',
+        max_bookings_per_day: 3
+      },
+      {
+        slot_id: 6,
+        cleaner_id: 3,
+        day: 'Mon',
         start_time: '10:00:00',
-        end_time: '18:00:00'
+        end_time: '16:00:00',
+        max_bookings_per_day: 2
       }
     ];
 
     // Apply filters
     let filteredTimeSlots = timeSlots;
     
-    if (staffId) {
-      filteredTimeSlots = filteredTimeSlots.filter(slot => slot.staff_id === parseInt(staffId));
+    if (cleanerId) {
+      filteredTimeSlots = filteredTimeSlots.filter(slot => slot.cleaner_id === parseInt(cleanerId));
     }
     
     if (day) {
@@ -71,12 +85,12 @@ export async function GET(request) {
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { staff_id, day, start_time, end_time } = body;
+    const { cleaner_id, day, start_time, end_time, max_bookings_per_day = 4 } = body;
 
     // Validation
-    if (!staff_id || !day || !start_time || !end_time) {
+    if (!cleaner_id || !day || !start_time || !end_time) {
       return NextResponse.json(
-        { error: 'Staff ID, day, start time, and end time are required' },
+        { error: 'Cleaner ID, day, start time, and end time are required' },
         { status: 400 }
       );
     }
@@ -107,13 +121,22 @@ export async function POST(request) {
       );
     }
 
+    // Validate max bookings per day
+    if (max_bookings_per_day < 1 || max_bookings_per_day > 8) {
+      return NextResponse.json(
+        { error: 'Max bookings per day must be between 1 and 8' },
+        { status: 400 }
+      );
+    }
+
     // TODO: Replace with actual database insert
     const newTimeSlot = {
       slot_id: Date.now(),
-      staff_id: parseInt(staff_id),
+      cleaner_id: parseInt(cleaner_id),
       day: day,
       start_time: start_time,
-      end_time: end_time
+      end_time: end_time,
+      max_bookings_per_day: parseInt(max_bookings_per_day)
     };
 
     return NextResponse.json({ timeSlot: newTimeSlot }, { status: 201 });
