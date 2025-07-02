@@ -1,16 +1,17 @@
 import { NextResponse } from 'next/server';
+import { cleaningServicesDB } from '@/lib/db';
 
-// GET /api/availability - Check available time slots for a staff member
+// GET /api/availability - Check available time slots for a cleaner
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
-    const staffId = searchParams.get('staff_id');
+    const cleanerId = searchParams.get('cleaner_id');
     const date = searchParams.get('date');
-    const serviceId = searchParams.get('service_id');
+    const serviceTypeId = searchParams.get('service_type_id');
 
-    if (!staffId || !date || !serviceId) {
+    if (!cleanerId || !date || !serviceTypeId) {
       return NextResponse.json(
-        { error: 'Staff ID, date, and service ID are required' },
+        { error: 'Cleaner ID, date, and service type ID are required' },
         { status: 400 }
       );
     }
@@ -29,85 +30,102 @@ export async function GET(request) {
     const dayOfWeek = days[targetDate.getDay()];
 
     // TODO: Replace with actual database queries
-    // 1. Get staff's time slots for this day
-    const staffTimeSlots = [
+    // 1. Get cleaner's time slots for this day
+    const cleanerTimeSlots = [
       {
         slot_id: 1,
-        staff_id: parseInt(staffId),
+        cleaner_id: parseInt(cleanerId),
         day: dayOfWeek,
-        start_time: '09:00:00',
-        end_time: '17:00:00'
+        start_time: '08:00:00',
+        end_time: '18:00:00'
       }
     ];
 
-    // 2. Get service duration
-    const services = [
+    // 2. Get service type duration
+    const serviceTypes = [
       {
-        service_id: 1,
-        name: 'Cardiology Consultation',
-        duration_minutes: 30,
-        price: 150.00
+        service_type_id: 1,
+        name: 'Regular Cleaning',
+        category: 'standard',
+        base_price: 80.00,
+        duration_hours: 2,
+        description: 'Standard cleaning including dusting, vacuuming, and bathroom cleaning'
       },
       {
-        service_id: 2,
-        name: 'Neurology Consultation',
-        duration_minutes: 45,
-        price: 200.00
+        service_type_id: 2,
+        name: 'Deep Cleaning',
+        category: 'premium',
+        base_price: 150.00,
+        duration_hours: 4,
+        description: 'Comprehensive cleaning including inside appliances and detailed attention'
+      },
+      {
+        service_type_id: 3,
+        name: 'Move-out Cleaning',
+        category: 'specialized',
+        base_price: 200.00,
+        duration_hours: 6,
+        description: 'Complete cleaning for property turnover including carpet cleaning'
       }
     ];
 
-    const service = services.find(s => s.service_id === parseInt(serviceId));
-    if (!service) {
+    const serviceType = serviceTypes.find(s => s.service_type_id === parseInt(serviceTypeId));
+    if (!serviceType) {
       return NextResponse.json(
-        { error: 'Service not found' },
+        { error: 'Service type not found' },
         { status: 404 }
       );
     }
 
-    // 3. Get existing appointments for this staff member on this date
-    const existingAppointments = [
+    // 3. Get existing bookings for this cleaner on this date
+    const existingBookings = [
       {
-        appointment_id: 1,
-        start_time: '2024-01-15T10:00:00Z',
-        end_time: '2024-01-15T10:30:00Z'
+        booking_id: 1,
+        scheduled_date: '2024-01-15',
+        start_time: '10:00:00',
+        end_time: '12:00:00'
       },
       {
-        appointment_id: 2,
-        start_time: '2024-01-15T14:00:00Z',
-        end_time: '2024-01-15T14:45:00Z'
+        booking_id: 2,
+        scheduled_date: '2024-01-15',
+        start_time: '14:00:00',
+        end_time: '18:00:00'
       }
     ];
 
     // Calculate available slots
     const availableSlots = [];
     
-    if (staffTimeSlots.length > 0) {
-      const timeSlot = staffTimeSlots[0];
+    if (cleanerTimeSlots.length > 0) {
+      const timeSlot = cleanerTimeSlots[0];
       
       // Convert time slot to datetime for the target date
       const slotStart = new Date(`${date}T${timeSlot.start_time}`);
       const slotEnd = new Date(`${date}T${timeSlot.end_time}`);
       
-      // Generate 30-minute slots within the time slot
-      const slotDuration = 30; // minutes
+      // Generate 1-hour slots within the time slot
+      const slotDuration = 60; // minutes
       let currentTime = new Date(slotStart);
       
       while (currentTime < slotEnd) {
-        const slotEndTime = new Date(currentTime.getTime() + (service.duration_minutes * 60000));
+        const slotEndTime = new Date(currentTime.getTime() + (serviceType.duration_hours * 60 * 60000));
         
-        // Check if this slot conflicts with existing appointments
-        const hasConflict = existingAppointments.some(appointment => {
-          const appStart = new Date(appointment.start_time);
-          const appEnd = new Date(appointment.end_time);
+        // Check if this slot conflicts with existing bookings
+        const hasConflict = existingBookings.some(booking => {
+          if (booking.scheduled_date !== date) return false;
           
-          return (currentTime < appEnd && slotEndTime > appStart);
+          const bookingStart = new Date(`${date}T${booking.start_time}`);
+          const bookingEnd = new Date(`${date}T${booking.end_time}`);
+          
+          return (currentTime < bookingEnd && slotEndTime > bookingStart);
         });
         
         if (!hasConflict && slotEndTime <= slotEnd) {
           availableSlots.push({
-            start_time: currentTime.toISOString(),
-            end_time: slotEndTime.toISOString(),
-            duration_minutes: service.duration_minutes
+            start_time: currentTime.toTimeString().slice(0, 8),
+            end_time: slotEndTime.toTimeString().slice(0, 8),
+            duration_hours: serviceType.duration_hours,
+            estimated_price: serviceType.base_price
           });
         }
         
@@ -116,11 +134,12 @@ export async function GET(request) {
     }
 
     return NextResponse.json({
-      staff_id: parseInt(staffId),
+      cleaner_id: parseInt(cleanerId),
       date: date,
-      service_id: parseInt(serviceId),
-      service_name: service.name,
-      service_duration: service.duration_minutes,
+      service_type_id: parseInt(serviceTypeId),
+      service_type_name: serviceType.name,
+      service_duration_hours: serviceType.duration_hours,
+      base_price: serviceType.base_price,
       available_slots: availableSlots
     });
   } catch (error) {
