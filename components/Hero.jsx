@@ -2,7 +2,7 @@ import { Button } from "./ui/button";
 function MyButton() {
   return (
     <Button>
-      I am a button
+      Learn Scheduler
     </Button>
   );
 }
